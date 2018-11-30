@@ -98,7 +98,7 @@ val options = Options()
     .addOption(
         Option.builder()
             .longOpt("size")
-            .desc("Elasticsearch scroll size.")
+            .desc("Elasticsearch scroll size")
             .hasArg()
             .build()
     )
