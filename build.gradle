@@ -1,0 +1,60 @@
+def getVersion = { ->
+    def p = 'git describe --tags'.execute(); p.waitFor()
+    def version = p.exitValue() == 0 ? p.text.trim() : '0.0.0'
+    def dirty = 'git status -s'.execute().text.trim()
+    return dirty ? "${version}-SNAPSHOT" : version
+}
+
+buildscript {
+    ext.kotlin_version = '1.3.10'
+
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.1'
+    }
+}
+
+apply plugin: 'kotlin'
+apply plugin: 'application'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+group 'com.zmeng'
+version getVersion()
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.elasticsearch.client:elasticsearch-rest-high-level-client:6.3.2'
+    compile 'io.github.cdimascio:java-dotenv:3.1.2'
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.8.1'
+    compile group: 'commons-cli', name: 'commons-cli', version: '1.4'
+    compile group: 'org.apache.commons', name: 'commons-csv', version: '1.6'
+    compile group: 'com.squareup.moshi', name: 'moshi-kotlin', version: '1.8.0'
+
+    compile group: 'org.apache.logging.log4j', name: 'log4j-to-slf4j', version: '2.11.1'
+    compile "ch.qos.logback:logback-classic:1.2.1"
+
+    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+sourceCompatibility = 1.8
+
+mainClassName = "BootstrapKt"
+shadowJar {
+    baseName = rootProject.name
+    classifier = null
+    version = null
+}
