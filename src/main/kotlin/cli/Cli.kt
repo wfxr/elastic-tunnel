@@ -13,6 +13,7 @@ fun getConfig(args: Array<String>): Config {
         val footer = """|
             |The MIT License
             |Copyright(c) 2018 Wenxuan Zhang
+            |https://github.com/wfxr/elastic-tunnel
         """.trimMargin()
         formatter.printHelp("elastic-tunnel", null, options, footer, true)
         throw e
