@@ -1,6 +1,7 @@
 import cli.getConfig
 import org.elasticsearch.index.query.QueryBuilders
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.min
 import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
@@ -21,7 +22,7 @@ fun main(args: Array<String>) {
             while (res.hits.isNotEmpty() && remain.get() > 0) {
                 output(res, config.fields, remain, curr, config.output, config.pretty)
                 res = c.scroll(res.scrollId, config.scrollTimeout)
-                System.err.println("progress: $curr / ${config.limit}")
+                System.err.println("progress: $curr / ${min(res.total, config.limit.toLong())}")
             }
         }
     } catch (e: Exception) {
