@@ -20,7 +20,7 @@ fun main(args: Array<String>) {
             val curr = AtomicInteger(0)
             var res = c.search(query, config.index, config.scrollSize, config.scrollTimeout, config.fields)
             while (res.hits.isNotEmpty() && remain.get() > 0) {
-                output(res, config.fields, remain, curr, config.output, config.pretty)
+                output(res, config.fields, config.output, config.pretty, curr, remain)
                 res = c.scroll(res.scrollId, config.scrollTimeout)
                 System.err.println("progress: $curr / ${min(res.total, config.limit.toLong())}")
             }

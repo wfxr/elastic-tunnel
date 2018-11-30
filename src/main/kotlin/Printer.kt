@@ -5,10 +5,10 @@ import java.util.concurrent.atomic.AtomicInteger
 fun output(
     result: Result,
     fields: List<String>,
-    remain: AtomicInteger = AtomicInteger(Int.MAX_VALUE),
-    finished: AtomicInteger = AtomicInteger(0),
     format: OutputFormat,
-    pretty: Boolean
+    pretty: Boolean,
+    finished: AtomicInteger = AtomicInteger(0),
+    remain: AtomicInteger = AtomicInteger(Int.MAX_VALUE)
 ) {
     result.hits.take(remain.get()).let { items ->
         when (format) {
