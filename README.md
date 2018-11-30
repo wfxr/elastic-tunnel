@@ -5,18 +5,18 @@ Tools for downloading data from elasticsearch server.
 ## Usage
 
 ```
-usage: elastic-tunnel -f <arg> -h <arg> -i <arg> [-l <arg>] -o <arg> 
-       [-p <arg>] [--pretty] [--scroll <arg>] [--size <arg>] [-u <arg>]
-    -f, --fields <arg>   The source fields to download
+usage: elastic-tunnel -h <arg> [-u <arg>] [-p <arg>] -i <arg> -f <arg> 
+       [-l <arg>] -o <arg> [--pretty] [--scroll <arg>] [--size <arg>] 
     -h, --host <arg>     Elasticsearch host url
+    -u, --user <arg>     Elasticsearch user name
+    -p, --pass <arg>     Elasticsearch user password
     -i, --index <arg>    Elasticsearch index name or alias
+    -f, --fields <arg>   The source fields to download
     -l, --limit <arg>    Max entries to download
     -o, --output <arg>   Output format [JSON|CSV]
-    -p, --pass <arg>     Elasticsearch user password
         --pretty         Pretty printing
         --scroll <arg>   Elasticsearch scroll timeout
         --size <arg>     Elasticsearch scroll size
-    -u, --user <arg>     Elasticsearch user name
 ```
 
 You need to enter a query body or redirected it from file, eg:
