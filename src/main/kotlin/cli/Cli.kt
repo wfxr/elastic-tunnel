@@ -121,7 +121,6 @@ val options = Options()
     .addOption(
         Option.builder("l")
             .longOpt("limit")
-            .type(Int::class.java)
             .desc("Max entries to download")
             .hasArg()
             .build()

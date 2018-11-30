@@ -8,14 +8,16 @@ fun output(
     format: OutputFormat,
     pretty: Boolean
 ) {
-    when (format) {
-        OutputFormat.JSON -> {
-            println(result.toJson(if (pretty) "  " else ""))
-        }
-        OutputFormat.CSV -> {
-            val printer = CSVPrinter(System.out, CSVFormat.DEFAULT.withHeader(*fields.toTypedArray()))
-            result.hits.take(limit).forEach { hit ->
-                printer.printRecord(fields.map { hit[it] })
+    result.hits.take(limit).let { items ->
+        when (format) {
+            OutputFormat.JSON -> {
+                println(items.toJson(if (pretty) "  " else ""))
+            }
+            OutputFormat.CSV -> {
+                val printer = CSVPrinter(System.out, CSVFormat.DEFAULT.withHeader(*fields.toTypedArray()))
+                items.forEach { hit ->
+                    printer.printRecord(fields.map { hit[it] })
+                }
             }
         }
     }

@@ -19,8 +19,8 @@ fun main(args: Array<String>) {
             while (res.hits.isNotEmpty() && remain > 0) {
                 output(res, config.fields, remain, config.output, config.pretty)
                 res = c.scroll(res.scrollId, config.scrollTimeout)
+                remain -= res.hits.size
             }
-            remain -= res.hits.size
         }
     } catch (e: Exception) {
         System.err.println("Error: ${e.message}")
