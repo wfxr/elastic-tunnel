@@ -1,23 +1,25 @@
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
+import kotlin.math.min
 
 fun output(
     result: Result,
     fields: List<String>,
     format: OutputFormat,
     pretty: Boolean,
-    finished: AtomicInteger = AtomicInteger(0),
-    remain: AtomicInteger = AtomicInteger(Int.MAX_VALUE)
+    finished: AtomicLong,
+    remain: AtomicLong
 ) {
-    result.hits.take(remain.get()).let { items ->
+    val count = min(remain.get(), result.hits.size.toLong())
+    result.hits.take(count.toInt()).let { items ->
         when (format) {
             OutputFormat.JSON -> {
                 println(items.toJson(if (pretty) "  " else ""))
             }
             OutputFormat.CSV -> {
                 val csvFormat =
-                    if (finished.get() == 0)
+                    if (finished.get() == 0L)
                         CSVFormat.DEFAULT.withHeader(*fields.toTypedArray())
                     else
                         CSVFormat.DEFAULT
@@ -29,7 +31,7 @@ fun output(
                 }
             }
         }
-        remain.addAndGet(-items.size)
-        finished.addAndGet(items.size)
     }
+    remain.addAndGet(-count)
+    finished.addAndGet(count)
 }

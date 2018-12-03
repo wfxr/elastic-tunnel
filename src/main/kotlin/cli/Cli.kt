@@ -24,10 +24,10 @@ fun getConfig(args: Array<String>): Config {
     val pass = cli.getOptionValue("pass") ?: "Anonymous"
     val index = cli.getOptionValue("index")
     val fields = cli.getOptionValue("fields").split(",")
-    val limit = cli.getOptionValue("limit")?.toInt() ?: Int.MAX_VALUE
+    val limit = cli.getOptionValue("limit")?.toLong() ?: Long.MAX_VALUE
     val output = (cli.getOption("output") as OutputOption).getEnum()
     val pretty = cli.hasOption("pretty")
-    val scrollSize = min(min(cli.getOptionValue("size")?.toInt() ?: 2000, limit), 10000)
+    val scrollSize = min(min(cli.getOptionValue("size")?.toLong() ?: 2000, limit), 10000).toInt()
     val scrollTimeout = cli.getOptionValue("scroll") ?: "1m"
 
     return Config(

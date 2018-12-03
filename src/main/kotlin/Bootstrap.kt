@@ -1,6 +1,6 @@
 import cli.getConfig
 import org.elasticsearch.index.query.QueryBuilders
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.min
 import kotlin.system.exitProcess
 
@@ -16,13 +16,13 @@ fun main(args: Array<String>) {
         client.use { c ->
             val queryJson = System.`in`.bufferedReader().use { it.readText() }
             val query = QueryBuilders.wrapperQuery(queryJson)
-            val remain = AtomicInteger(config.limit)
-            val curr = AtomicInteger(0)
+            val remain = AtomicLong(config.limit)
+            val curr = AtomicLong(0)
             var res = c.search(query, config.index, config.scrollSize, config.scrollTimeout, config.fields)
             while (res.hits.isNotEmpty() && remain.get() > 0) {
                 output(res, config.fields, config.output, config.pretty, curr, remain)
                 res = c.scroll(res.scrollId, config.scrollTimeout)
-                System.err.println("progress: $curr / ${min(res.total, config.limit.toLong())}")
+                System.err.println("progress: $curr / ${min(res.total, config.limit)}")
             }
         }
     } catch (e: Exception) {

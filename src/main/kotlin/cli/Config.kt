@@ -8,7 +8,7 @@ data class Config(
     val pass: String,
     val index: String,
     val fields: List<String>,
-    val limit: Int,
+    val limit: Long,
     val output: OutputFormat,
     val pretty: Boolean,
     val scrollSize: Int,
