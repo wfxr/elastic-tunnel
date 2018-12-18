@@ -22,7 +22,7 @@ usage: elastic-tunnel -h <arg> [-u <arg>] [-p <arg>] -i <arg> -f <arg>
 You need to enter a query body or redirected it from file, eg:
 
 ```
-elastic-tunnel -h http://127.0.0.1:9200 -i twitter --fields=id,user -o csv < query.json
+elastic-tunnel -i twitter --fields=id,user -o csv < query.json
 ```
 
 `query.json` may like this:
