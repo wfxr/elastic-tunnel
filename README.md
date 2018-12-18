@@ -5,7 +5,7 @@ Tools for downloading data from elasticsearch server.
 ## Usage
 
 ```
-usage: elastic-tunnel -h <arg> [-u <arg>] [-p <arg>] -i <arg> -f <arg> 
+usage: elastic-tunnel [-h <arg>] [-u <arg>] [-p <arg>] -i <arg> -f <arg> 
        [-l <arg>] -o <arg> [--pretty] [--scroll <arg>] [--size <arg>] 
     -h, --host <arg>     Elasticsearch host url
     -u, --user <arg>     Elasticsearch user name
@@ -22,7 +22,7 @@ usage: elastic-tunnel -h <arg> [-u <arg>] [-p <arg>] -i <arg> -f <arg>
 You need to enter a query body or redirected it from file, eg:
 
 ```
-elastic-tunnel -i twitter --fields=id,user -o csv < query.json
+elastic-tunnel -i twitter -f id,user -o csv < query.json
 ```
 
 `query.json` may like this:
