@@ -1,8 +1,21 @@
 package cli
 
 import OutputOption
+import io.github.cdimascio.dotenv.dotenv
 import org.apache.commons.cli.*
+import java.nio.file.Files
+import java.nio.file.Paths
 import kotlin.math.min
+
+
+val env = dotenv {
+    val configDir =
+        Paths.get(".esconfig").takeIf { Files.isReadable(it) }?.let { "." }
+            ?: Paths.get(System.getProperty("user.home"))
+    directory = configDir.toString()
+    filename = ".esconfig"
+    ignoreIfMissing = true
+}
 
 fun getConfig(args: Array<String>): Config {
     val cli = try {
@@ -19,16 +32,17 @@ fun getConfig(args: Array<String>): Config {
         throw e
     }
 
-    val host = cli.getOptionValue("host")
-    val user = cli.getOptionValue("user") ?: "Anonymous"
-    val pass = cli.getOptionValue("pass") ?: "Anonymous"
+    val host = cli.getOptionValue("host") ?: env["ES_HOST"] ?: "http://127.0.0.1:9200"
+    val user = cli.getOptionValue("user") ?: env["ES_USER"] ?: "Anonymous"
+    val pass = cli.getOptionValue("pass") ?: env["ES_PASS"] ?: "Anonymous"
     val index = cli.getOptionValue("index")
     val fields = cli.getOptionValue("fields").split(",")
     val limit = cli.getOptionValue("limit")?.toLong() ?: Long.MAX_VALUE
     val output = (cli.getOption("output") as OutputOption).getEnum()
     val pretty = cli.hasOption("pretty")
-    val scrollSize = min(min(cli.getOptionValue("size")?.toLong() ?: 2000, limit), 10000).toInt()
-    val scrollTimeout = cli.getOptionValue("scroll") ?: "1m"
+    val scrollSize =
+        min(min(cli.getOptionValue("size")?.toLong() ?: env["SCROLL_SIZE"]?.toLong() ?: 2000, limit), 10000).toInt()
+    val scrollTimeout = cli.getOptionValue("scroll") ?: env["SCROLL_SIZE"] ?: "1m"
 
     return Config(
         host = host,
@@ -71,7 +85,6 @@ val options = Options()
             .longOpt("host")
             .desc("Elasticsearch host url")
             .hasArg()
-            .required()
             .build()
     )
     .addOption(
