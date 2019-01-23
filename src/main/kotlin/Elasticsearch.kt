@@ -25,24 +25,21 @@ fun RestHighLevelClient.search(
     index: String,
     size: Int,
     keepAlive: String,
-    fields: List<String>
+    fields: List<String>?
 ) = search(
-    SearchRequest(index)
-        .source(
-            SearchSourceBuilder()
-                .query(query)
-                .fetchSource(fields.toTypedArray(), null)
-                .size(size)
-        )
-        .scroll(keepAlive)
+    SearchRequest(index).source(
+        SearchSourceBuilder()
+            .query(query)
+            .size(size)
+            .apply { fields?.toTypedArray()?.let { fetchSource(it, null) } }
+    ).scroll(keepAlive)
 ).toRecords()
 
 fun RestHighLevelClient.scroll(
     scrollId: String,
     keepAlive: String
 ) = searchScroll(
-    SearchScrollRequest(scrollId)
-        .scroll(keepAlive)
+    SearchScrollRequest(scrollId).scroll(keepAlive)
 ).toRecords()
 
 fun SearchResponse.toRecords() = Result(

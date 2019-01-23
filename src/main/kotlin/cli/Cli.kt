@@ -18,8 +18,37 @@ val env = dotenv {
 }
 
 fun getConfig(args: Array<String>): Config {
-    val cli = try {
-        DefaultParser().parse(options, args).validate()
+    return try {
+        val cli = DefaultParser().parse(options, args).validate()
+
+        val host = cli.getOptionValue("host") ?: env["ES_HOST"] ?: "http://127.0.0.1:9200"
+        val user = cli.getOptionValue("user") ?: env["ES_USER"] ?: "Anonymous"
+        val pass = cli.getOptionValue("pass") ?: env["ES_PASS"] ?: "Anonymous"
+        val index = cli.getOptionValue("index")
+        val fields = cli.getOptionValue("fields")?.split(",")
+        val limit = cli.getOptionValue("limit")?.toLong() ?: Long.MAX_VALUE
+        val output = (cli.getOption("output") as OutputOption).getEnum()
+        val pretty = cli.hasOption("pretty")
+        val scrollSize =
+            min(min(cli.getOptionValue("size")?.toLong() ?: env["SCROLL_SIZE"]?.toLong() ?: 2000, limit), 10000).toInt()
+        val scrollTimeout = cli.getOptionValue("scroll") ?: env["SCROLL_SIZE"] ?: "1m"
+
+        if (fields == null && output == OutputFormat.CSV) {
+            throw Exception("fields must be specified when output format is csv")
+        }
+
+        Config(
+            host = host,
+            user = user,
+            pass = pass,
+            index = index,
+            fields = fields,
+            limit = limit,
+            output = output,
+            pretty = pretty,
+            scrollSize = scrollSize,
+            scrollTimeout = scrollTimeout
+        )
     } catch (e: Exception) {
         System.err.println("Error: ${e.message}\n")
         val formatter = HelpFormatter()
@@ -31,31 +60,6 @@ fun getConfig(args: Array<String>): Config {
         formatter.printHelp("elastic-tunnel", null, options, footer, true)
         throw e
     }
-
-    val host = cli.getOptionValue("host") ?: env["ES_HOST"] ?: "http://127.0.0.1:9200"
-    val user = cli.getOptionValue("user") ?: env["ES_USER"] ?: "Anonymous"
-    val pass = cli.getOptionValue("pass") ?: env["ES_PASS"] ?: "Anonymous"
-    val index = cli.getOptionValue("index")
-    val fields = cli.getOptionValue("fields").split(",")
-    val limit = cli.getOptionValue("limit")?.toLong() ?: Long.MAX_VALUE
-    val output = (cli.getOption("output") as OutputOption).getEnum()
-    val pretty = cli.hasOption("pretty")
-    val scrollSize =
-        min(min(cli.getOptionValue("size")?.toLong() ?: env["SCROLL_SIZE"]?.toLong() ?: 2000, limit), 10000).toInt()
-    val scrollTimeout = cli.getOptionValue("scroll") ?: env["SCROLL_SIZE"] ?: "1m"
-
-    return Config(
-        host = host,
-        user = user,
-        pass = pass,
-        index = index,
-        fields = fields,
-        limit = limit,
-        output = output,
-        pretty = pretty,
-        scrollSize = scrollSize,
-        scrollTimeout = scrollTimeout
-    )
 }
 
 fun CommandLine.validate(handler: CommandLine.() -> Unit = {}) = apply {
@@ -143,7 +147,6 @@ val options = Options()
             .longOpt("fields")
             .desc("The source fields to download")
             .hasArg()
-            .required()
             .build()
     )
     .addOption(

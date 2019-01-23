@@ -7,7 +7,7 @@ data class Config(
     val user: String,
     val pass: String,
     val index: String,
-    val fields: List<String>,
+    val fields: List<String>?,
     val limit: Long,
     val output: OutputFormat,
     val pretty: Boolean,

@@ -7,7 +7,7 @@ import kotlin.math.min
 
 fun output(
     result: Result,
-    fields: List<String>,
+    fields: List<String>?,
     format: OutputFormat,
     pretty: Boolean,
     finished: AtomicLong,
@@ -20,6 +20,9 @@ fun output(
                 println(items.toJson(if (pretty) "  " else ""))
             }
             OutputFormat.CSV -> {
+                if (fields == null) {
+                    throw Exception("fields can't be null for csv format")
+                }
                 val csvFormat =
                     if (finished.get() == 0L)
                         CSVFormat.DEFAULT.withHeader(*fields.toTypedArray())
