@@ -17,7 +17,9 @@ fun output(
     result.hits.take(count.toInt()).let { items ->
         when (format) {
             OutputFormat.JSON -> {
-                println(items.toJson(if (pretty) "  " else ""))
+                items.forEach {
+                    println(it.toJson(if (pretty) "  " else ""))
+                }
             }
             OutputFormat.CSV -> {
                 if (fields == null) {
