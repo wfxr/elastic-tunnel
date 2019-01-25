@@ -59,7 +59,7 @@ fun getConfig(args: Array<String>): Config {
         val formatter = HelpFormatter()
         val footer = """|
             |The MIT License
-            |Copyright(c) 2018 Wenxuan Zhang
+            |Copyright(c) 2019 Wenxuan Zhang
             |https://github.com/wfxr/elastic-tunnel
         """.trimMargin()
         formatter.printHelp("elastic-tunnel", null, options, footer, true)
@@ -113,7 +113,7 @@ val options = Options()
     .addOption(
         Option.builder("i")
             .longOpt("index")
-            .desc("Elasticsearch index name or alias")
+            .desc("Elasticsearch index name")
             .hasArg()
             .required()
             .build()
@@ -129,7 +129,7 @@ val options = Options()
     .addOption(
         Option.builder("s")
             .longOpt("slice")
-            .desc("Scroll slice")
+            .desc("Elasticsearch Scroll slice")
             .hasArg()
             .build()
     )
@@ -165,7 +165,7 @@ val options = Options()
     .addOption(
         Option.builder("f")
             .longOpt("fields")
-            .desc("The source fields to download")
+            .desc("Fields to download")
             .hasArg()
             .build()
     )
