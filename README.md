@@ -3,7 +3,6 @@
 Tools for downloading data from elasticsearch cluster.
 
 ## Usage
-
 ```
 usage: elastic-tunnel -i <index> -q <query> -o <format> [...]
      -f,--fields <arg>   Fields to download
@@ -19,6 +18,18 @@ usage: elastic-tunnel -i <index> -q <query> -o <format> [...]
         --size <arg>     Elasticsearch scroll size
      -u,--user <arg>     Elasticsearch user name
 ```
+
+## Config
+
+Option `host`, `user` and `pass` can be loaded from the config file, eg:
+```
+ES_HOST=http://192.168.1.1:9200
+ES_USER=user
+ES_PASS=pass
+```
+
+The program will try to read `.ecsonfig` in the working directory at first.
+Then try to read `$HOME/.esconfig` if it fails.
 
 ## Example
 
