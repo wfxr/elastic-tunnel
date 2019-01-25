@@ -25,6 +25,7 @@ fun getConfig(args: Array<String>): Config {
         val user = cli.getOptionValue("user") ?: env["ES_USER"] ?: "Anonymous"
         val pass = cli.getOptionValue("pass") ?: env["ES_PASS"] ?: "Anonymous"
         val index = cli.getOptionValue("index")
+        val query = Paths.get(cli.getOptionValue("query"))
         val fields = cli.getOptionValue("fields")?.split(",")
         val limit = cli.getOptionValue("limit")?.toLong() ?: Long.MAX_VALUE
         val output = (cli.getOption("output") as OutputOption).getEnum()
@@ -42,6 +43,7 @@ fun getConfig(args: Array<String>): Config {
             user = user,
             pass = pass,
             index = index,
+            query = query,
             fields = fields,
             limit = limit,
             output = output,
@@ -109,6 +111,14 @@ val options = Options()
         Option.builder("i")
             .longOpt("index")
             .desc("Elasticsearch index name or alias")
+            .hasArg()
+            .required()
+            .build()
+    )
+    .addOption(
+        Option.builder("q")
+            .longOpt("query")
+            .desc("Query file")
             .hasArg()
             .required()
             .build()

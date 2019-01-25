@@ -40,7 +40,8 @@ dependencies {
 
     compile group: 'org.apache.logging.log4j', name: 'log4j-to-slf4j', version: '2.11.1'
     compile "ch.qos.logback:logback-classic:1.2.1"
-
+    
+    compile 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.1'
     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 }
 

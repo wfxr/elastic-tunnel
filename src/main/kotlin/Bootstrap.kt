@@ -1,10 +1,11 @@
 import cli.getConfig
+import kotlinx.coroutines.runBlocking
 import org.elasticsearch.index.query.QueryBuilders
-import java.util.concurrent.atomic.AtomicLong
-import kotlin.math.min
+import java.nio.file.Files
 import kotlin.system.exitProcess
 
-fun main(args: Array<String>) {
+@Suppress("BlockingMethodInNonBlockingContext")
+fun main(args: Array<String>) = runBlocking<Unit> {
     val config = try {
         getConfig(args)
     } catch (e: Exception) {
@@ -12,22 +13,22 @@ fun main(args: Array<String>) {
     }
 
     try {
-        val client = getClient(config.host, config.user, config.pass)
-        client.use { c ->
-            val queryJson = System.`in`.bufferedReader().use { it.readText() }
-            val query = QueryBuilders.wrapperQuery(queryJson)
-            val remain = AtomicLong(config.limit)
-            val curr = AtomicLong(0)
-            var res = c.search(query, config.index, config.scrollSize, config.scrollTimeout, config.fields)
-            while (res.hits.isNotEmpty() && remain.get() > 0) {
-                output(res, config.fields, config.output, config.pretty, curr, remain)
-                res = c.scroll(res.scrollId, config.scrollTimeout)
-                System.err.println("progress: $curr / ${min(res.total, config.limit)}")
+        val queryJson = Files.newBufferedReader(config.query).use { it.readText() }
+        val query = QueryBuilders.wrapperQuery(queryJson)
+        getClient(config.host, config.user, config.pass).use { client ->
+            val source =
+                source(client, query, config.index, config.scrollSize, config.scrollTimeout, config.fields)
+            val unpacked = unpack(source, config.limit)
+            when (config.output) {
+                OutputFormat.JSON -> sinkJSON(unpacked, config.pretty)
+                OutputFormat.CSV -> sinkCSV(unpacked, config.fields)
             }
         }
     } catch (e: Exception) {
         System.err.println("Error: ${e.message}")
         exitProcess(2)
     }
+    // Explicit exit for the kotlin-coroutine issue: https://github.com/Kotlin/kotlinx.coroutines/issues/856
+    exitProcess(0)
 }
 
