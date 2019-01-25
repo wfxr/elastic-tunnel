@@ -29,11 +29,14 @@ fun getConfig(args: Array<String>): Config {
         val query = Paths.get(cli.getOptionValue("query"))
         val slice = cli.getOptionValue("slice")?.toInt() ?: 1
         val fields = cli.getOptionValue("fields")?.split(",")
-        val limit = cli.getOptionValue("limit")?.toLong() ?: Long.MAX_VALUE
+        val limit = cli.getOptionValue("limit")?.toLong()
         val output = (cli.getOption("output") as OutputOption).getEnum()
         val pretty = cli.hasOption("pretty")
-        val scrollSize =
-            min(min(cli.getOptionValue("size")?.toLong() ?: env["SCROLL_SIZE"]?.toLong() ?: 2000, limit), 10000).toInt()
+        val scrollSize = listOf(
+            cli.getOptionValue("size")?.toLong() ?: env["SCROLL_SIZE"]?.toLong(),
+            limit,
+            10000
+        ).mapNotNull { it }.min()!!.toInt()
         val scrollTimeout = cli.getOptionValue("scroll") ?: env["SCROLL_SIZE"] ?: "1m"
 
         if (fields == null && output == OutputFormat.CSV) {

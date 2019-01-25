@@ -11,7 +11,7 @@ data class Config(
     val query: Path,
     val slice: Int,
     val fields: List<String>?,
-    val limit: Long,
+    val limit: Long?,
     val output: OutputFormat,
     val pretty: Boolean,
     val scrollSize: Int,
