@@ -1,4 +1,6 @@
 import cli.getConfig
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.elasticsearch.index.query.QueryBuilders
 import java.nio.file.Files
@@ -15,20 +17,38 @@ fun main(args: Array<String>) = runBlocking<Unit> {
     try {
         val queryJson = Files.newBufferedReader(config.query).use { it.readText() }
         val query = QueryBuilders.wrapperQuery(queryJson)
-        getClient(config.host, config.user, config.pass).use { client ->
-            val source =
-                source(client, query, config.index, config.scrollSize, config.scrollTimeout, config.fields)
-            val unpacked = unpack(source, config.limit)
-            when (config.output) {
-                OutputFormat.JSON -> sinkJSON(unpacked, config.pretty)
-                OutputFormat.CSV -> sinkCSV(unpacked, config.fields)
+        with(config) {
+            getClient(host, user, pass).use { client ->
+                val source = Channel<Result>().let { channel ->
+                    for (sliceId in 0 until slice) {
+                        launch {
+                            source(
+                                channel,
+                                client,
+                                query,
+                                index,
+                                scrollSize,
+                                slice,
+                                sliceId,
+                                scrollTimeout,
+                                fields
+                            )
+                        }
+                    };channel
+                }
+                val unpacked = unpack(source, limit)
+                when (output) {
+                    OutputFormat.JSON -> sinkJSON(unpacked, pretty)
+                    OutputFormat.CSV -> sinkCSV(unpacked, fields)
+                }
             }
         }
     } catch (e: Exception) {
         System.err.println("Error: ${e.message}")
         exitProcess(2)
     }
-    // Explicit exit for the kotlin-coroutine issue: https://github.com/Kotlin/kotlinx.coroutines/issues/856
+    // Explicit exit for the kotlin-coroutine issue
+    // https://github.com/Kotlin/kotlinx.coroutines/issues/856
     exitProcess(0)
 }
 

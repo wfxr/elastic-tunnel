@@ -9,6 +9,7 @@ data class Config(
     val pass: String,
     val index: String,
     val query: Path,
+    val slice: Int,
     val fields: List<String>?,
     val limit: Long,
     val output: OutputFormat,

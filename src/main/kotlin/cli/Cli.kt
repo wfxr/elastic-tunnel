@@ -5,6 +5,7 @@ import io.github.cdimascio.dotenv.dotenv
 import org.apache.commons.cli.*
 import java.nio.file.Files
 import java.nio.file.Paths
+import kotlin.math.max
 import kotlin.math.min
 
 
@@ -26,6 +27,7 @@ fun getConfig(args: Array<String>): Config {
         val pass = cli.getOptionValue("pass") ?: env["ES_PASS"] ?: "Anonymous"
         val index = cli.getOptionValue("index")
         val query = Paths.get(cli.getOptionValue("query"))
+        val slice = cli.getOptionValue("slice")?.toInt() ?: 1
         val fields = cli.getOptionValue("fields")?.split(",")
         val limit = cli.getOptionValue("limit")?.toLong() ?: Long.MAX_VALUE
         val output = (cli.getOption("output") as OutputOption).getEnum()
@@ -44,6 +46,7 @@ fun getConfig(args: Array<String>): Config {
             pass = pass,
             index = index,
             query = query,
+            slice = slice,
             fields = fields,
             limit = limit,
             output = output,
@@ -121,6 +124,13 @@ val options = Options()
             .desc("Query file")
             .hasArg()
             .required()
+            .build()
+    )
+    .addOption(
+        Option.builder("s")
+            .longOpt("slice")
+            .desc("Scroll slice")
+            .hasArg()
             .build()
     )
     .addOption(

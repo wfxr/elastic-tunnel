@@ -3,8 +3,7 @@
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.consumeEach
-import kotlinx.coroutines.channels.flatMap
+import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.withContext
 import org.apache.commons.csv.CSVFormat
@@ -20,6 +19,7 @@ import org.elasticsearch.client.RestClient
 import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.index.query.QueryBuilder
 import org.elasticsearch.search.builder.SearchSourceBuilder
+import org.elasticsearch.search.slice.SliceBuilder
 import kotlin.math.min
 
 
@@ -37,13 +37,15 @@ fun RestHighLevelClient.search(
     index: String,
     size: Int,
     keepAlive: String,
-    fields: List<String>?
+    fields: List<String>?,
+    extraBuilder: SearchSourceBuilder.() -> SearchSourceBuilder = { this }
 ) = search(
     SearchRequest(index).source(
         SearchSourceBuilder()
             .query(query)
             .size(size)
             .apply { fields?.toTypedArray()?.let { fetchSource(it, null) } }
+            .extraBuilder()
     ).scroll(keepAlive)
 ).toRecords()
 
@@ -70,28 +72,33 @@ data class Result(
     @Transient val scrollId: String = ""
 )
 
-fun CoroutineScope.source(
+suspend fun source(
+    channel: SendChannel<Result>,
     client: RestHighLevelClient,
     query: QueryBuilder,
     index: String,
     size: Int,
+    slice: Int,
+    sliceId: Int,
     keepAlive: String,
     fields: List<String>?
-) = produce {
+) {
     var res = withContext(Dispatchers.IO) {
-        client.search(query, index, size, keepAlive, fields)
+        client.search(query, index, size, keepAlive, fields) {
+            if (slice > 1) slice(SliceBuilder(sliceId, slice)) else this
+        }
     }
     while (res.hits.isNotEmpty()) {
-        send(res)
+        channel.send(res)
         try {
             res = withContext(Dispatchers.IO) {
                 client.scroll(res.scrollId, keepAlive)
             }
         } catch (e: Exception) {
-            if (!this.isClosedForSend) {
+            if (!channel.isClosedForSend) {
                 throw e
             } else {
-                return@produce
+                return
             }
         }
     }
