@@ -14,6 +14,7 @@ class Progress {
         printStream.print(" sliceId: $sliceId;")
         printStream.print(" sliceFinished: ${sliceFinished[sliceId]};")
         printStream.print(" sliceTotal: $sliceTotal;")
+        if (sliceFinished[sliceId] == sliceTotal) printStream.print(" DONE")
         printStream.println()
     }
 }
