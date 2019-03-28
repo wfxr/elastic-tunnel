@@ -1,11 +1,9 @@
 @file:Suppress("EXPERIMENTAL_API_USAGE")
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.produce
-import kotlinx.coroutines.withContext
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
 import org.elasticsearch.client.RestHighLevelClient
@@ -23,36 +21,32 @@ suspend fun source(
     keepAlive: String,
     fields: List<String>?
 ) {
-    var res = withContext(Dispatchers.IO) {
-        client.search(query, index, size, keepAlive, fields) {
+    try {
+        var res = client.search(query, index, size, keepAlive, fields) {
             if (slice > 1) slice(SliceBuilder(sliceId, slice)) else this
+        }.apply { this.sliceId = sliceId }
+
+        while (res.hits.isNotEmpty()) {
+            channel.send(res)
+            res = client.scroll(res.scrollId, keepAlive).apply { this.sliceId = sliceId }
         }
-    }.apply { this.sliceId = sliceId }
-    while (res.hits.isNotEmpty()) {
-        channel.send(res)
-        try {
-            res = withContext(Dispatchers.IO) {
-                client.scroll(res.scrollId, keepAlive).apply { this.sliceId = sliceId }
-            }
-        } catch (e: Exception) {
-            if (!channel.isClosedForSend) {
-                throw e
-            } else {
-                return
-            }
+    } catch (e: Exception) {
+        when {
+            channel.isClosedForSend -> return
+            else -> throw e
         }
     }
 }
 
-fun CoroutineScope.unpack(results: ReceiveChannel<Result>, limit: Long?) = produce {
+fun CoroutineScope.unpack(source: ReceiveChannel<Result>, limit: Long?) = produce {
     val progress = Progress()
-    for (res in results) {
+    for (res in source) {
         for (hit in res.hits) {
             send(hit)
             progress.inc(res.sliceId)
             if (limit != null && progress.totalFinished >= limit) {
                 progress.println(res.sliceId, res.total)
-                results.cancel()
+                source.cancel()
                 return@produce
             }
         }
