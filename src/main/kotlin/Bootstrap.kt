@@ -1,12 +1,12 @@
 import cli.getConfig
+import com.github.wfxr.kprogress.IProgressState.Companion.INDEFINITE
+import com.github.wfxr.kprogress.ProgressBar
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.elasticsearch.index.query.QueryBuilders
 import java.nio.file.Files
-import java.util.concurrent.atomic.AtomicLong
 import kotlin.system.exitProcess
 
 @Suppress("BlockingMethodInNonBlockingContext", "RemoveExplicitTypeArguments")
@@ -16,11 +16,12 @@ fun main(args: Array<String>) = try {
         with(config) {
             val queryJson = Files.newBufferedReader(query).use { it.readText() }
             val query = QueryBuilders.wrapperQuery(queryJson)
-            getClient(host, user, pass).use { client ->
+            val client = getClient(host, user, pass)
+            val pb = ProgressBar(MutableList(slice) { INDEFINITE }, "slice")
+            try {
                 val source = Channel<Result>()
-                val total = AtomicLong(0)
                 val tasks = (0 until slice).map { sliceId ->
-                    async(Dispatchers.IO) {
+                    launch(Dispatchers.IO) {
                         source(
                             source,
                             client,
@@ -34,25 +35,24 @@ fun main(args: Array<String>) = try {
                         )
                     }
                 }
-                tasks.map {
-                    val (sliceTotal, job) = it.await()
-                    total.addAndGet(sliceTotal)
-                    job
-                }.let { jobs ->
-                    launch {
-                        jobs.forEach { it.join() }.also { source.close() }
-                    }
+                launch(Dispatchers.IO) {
+                    tasks.forEach { it.join() }
+                    source.close()
                 }
-                val unpacked = unpack(source, limit ?: total.get())
+                val unpacked = unpack(source, limit, pb)
                 when (output) {
                     OutputFormat.JSON -> sinkJSON(unpacked, pretty)
                     OutputFormat.CSV -> sinkCSV(unpacked, fields)
                 }
-                // Explicit exit for the kotlin-coroutine issue
-                // https://github.com/Kotlin/kotlinx.coroutines/issues/856
-                exitProcess(0)
+            } catch (e: Exception) {
+            } finally {
+                pb.close()
+                client.close()
             }
         }
+        // Explicit exit for the kotlin-coroutine issue
+        // https://github.com/Kotlin/kotlinx.coroutines/issues/856
+        exitProcess(0)
     }
 } catch (e: Exception) {
     System.err.println("Error: ${e.message}")

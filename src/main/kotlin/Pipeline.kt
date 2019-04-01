@@ -1,11 +1,10 @@
 @file:Suppress("EXPERIMENTAL_API_USAGE")
 
+import com.github.wfxr.kprogress.ProgressBar
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.produce
-import me.tongfei.progressbar.ProgressBarBuilder
-import me.tongfei.progressbar.ProgressBarStyle
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
 import org.elasticsearch.client.RestHighLevelClient
@@ -22,48 +21,40 @@ suspend fun source(
     sliceId: Int,
     keepAlive: String,
     fields: List<String>?
-): Pair<Long, Job> {
-    return try {
+) {
+    try {
         var res = client.search(query, index, size, keepAlive, fields) {
             if (slice > 1) slice(SliceBuilder(sliceId, slice)) else this
         }.apply { this.sliceId = sliceId }
 
-        res.total to CoroutineScope(Dispatchers.IO).launch {
-            while (res.hits.isNotEmpty()) {
-                channel.send(res)
-                res = client.scroll(res.scrollId, keepAlive).apply { this.sliceId = sliceId }
-            }
+        while (res.hits.isNotEmpty()) {
+            channel.send(res)
+            res = client.scroll(res.scrollId, keepAlive).apply { this.sliceId = sliceId }
         }
     } catch (e: Exception) {
         when {
-            channel.isClosedForSend -> return 0L to CoroutineScope(Dispatchers.IO).launch {}
+            channel.isClosedForSend -> return
             else -> throw e
         }
     }
 }
 
-fun CoroutineScope.unpack(source: ReceiveChannel<Result>, total: Long) = produce {
-    ProgressBarBuilder()
-        .setInitialMax(total)
-        .setPrintStream(System.err)
-        .setTaskName("Progress")
-        .setStyle(ProgressBarStyle.UNICODE_BLOCK)
-        .setUnit(" docs", 1)
-        .setUpdateIntervalMillis(50)
-        .showSpeed("0")
-        .build()
-        .use { pb ->
-            for (res in source) {
-                for (hit in res.hits) {
-                    send(hit)
-                    pb.step()
-                    if (pb.current >= total) {
-                        source.cancel()
-                        return@produce
-                    }
-                }
+fun CoroutineScope.unpack(
+    source: ReceiveChannel<Result>,
+    total: Long? = null,
+    pb: ProgressBar
+) = produce {
+    for (res in source) {
+        pb[res.sliceId].updateTotal(res.total)
+        for (hit in res.hits) {
+            send(hit)
+            pb[res.sliceId].inc()
+            total?.takeIf { pb.curr() >= it }?.let {
+                source.cancel()
+                return@produce
             }
         }
+    }
 }
 
 @Suppress("BlockingMethodInNonBlockingContext")
