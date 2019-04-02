@@ -9,7 +9,7 @@ import org.elasticsearch.index.query.QueryBuilders
 import java.nio.file.Files
 import kotlin.system.exitProcess
 
-@Suppress("BlockingMethodInNonBlockingContext", "RemoveExplicitTypeArguments")
+@Suppress("BlockingMethodInNonBlockingContext")
 fun main(args: Array<String>) = try {
     runBlocking<Unit> {
         val config = getConfig(args)
@@ -41,8 +41,8 @@ fun main(args: Array<String>) = try {
                 }
                 val unpacked = unpack(source, limit, pb)
                 when (output) {
-                    OutputFormat.JSON -> sinkJSON(unpacked, pretty)
-                    OutputFormat.CSV -> sinkCSV(unpacked, fields)
+                    OutputFormat.JSON -> sinkJSON(unpacked, pretty, System.out)
+                    OutputFormat.CSV -> sinkCSV(unpacked, fields, System.out)
                 }
             } catch (e: Exception) {
             } finally {

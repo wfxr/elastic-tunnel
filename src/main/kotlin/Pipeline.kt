@@ -1,15 +1,17 @@
 @file:Suppress("EXPERIMENTAL_API_USAGE")
 
 import com.github.wfxr.kprogress.ProgressBar
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.channels.produce
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
 import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.index.query.QueryBuilder
 import org.elasticsearch.search.slice.SliceBuilder
+import java.io.PrintStream
 
 suspend fun source(
     channel: SendChannel<Result>,
@@ -60,25 +62,29 @@ fun CoroutineScope.unpack(
 @Suppress("BlockingMethodInNonBlockingContext")
 suspend fun sinkCSV(
     hits: ReceiveChannel<Hit>,
-    fields: List<String>?
+    fields: List<String>?,
+    os: PrintStream
 ) {
-    if (fields == null) throw Exception("fields can't be null for csv format")
+    require(fields != null) {
+        "fields can't be null for csv format"
+    }
 
-    println(fields.joinToString(","))
+    os.println(fields.joinToString(","))
     val csvFormat = CSVFormat.DEFAULT
     val printer = CSVPrinter(System.out, csvFormat)
 
-    for (hit in hits) {
-        val flatten = hit.flatten()
+    hits.consumeEach {
+        val flatten = it.flatten()
         printer.printRecord(fields.map { field -> flatten[".$field"] })
     }
 }
 
 suspend fun sinkJSON(
     hits: ReceiveChannel<Hit>,
-    pretty: Boolean
+    pretty: Boolean,
+    os: PrintStream
 ) {
-    for (hit in hits) {
-        println(hit.toJson(if (pretty) "  " else ""))
+    hits.consumeEach {
+        os.println(it.toJson(pretty))
     }
 }

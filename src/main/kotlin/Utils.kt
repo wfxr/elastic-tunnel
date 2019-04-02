@@ -8,7 +8,12 @@ val moshi = Moshi.Builder()
 
 val moshiAdapter = moshi.adapter(Any::class.java)!!
 
-fun Any?.toJson(indent: String = "") = moshiAdapter.indent(indent).toJson(this)!!
+fun Any?.toJson(indent: String) = moshiAdapter.indent(indent).toJson(this)!!
+fun Any?.toJson(pretty: Boolean = false) =
+    moshiAdapter.apply {
+        if (pretty) indent("  ")
+    }.toJson(this)!!
+
 
 fun Dotenv.mustGet(name: String) = this[name] ?: throw Exception("environment variable '$name' not set")
 
